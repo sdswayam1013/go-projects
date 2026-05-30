@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-/*import (
+/*import ( we have to update
 	"fmt"
 	"sync"
 )
@@ -59,8 +59,8 @@ func main() {
 		"hell jupiter",
 		"hello pluto",
 	}
+	ch := make(chan string)
 	for _, x := range message {
-		ch := make(chan string)
 
 		wg.Add(1)
 		go updateMesaage(x, ch)

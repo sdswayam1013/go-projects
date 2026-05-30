@@ -1,0 +1,102 @@
+{{template "base" .}}
+
+{{define "content" }}
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <h1 class="mt-5">Test microservices</h1>
+                <hr>
+                <a id="brokerBtn" class="btn btn-outline-secondary" href="#">Test Broker</a>
+
+                <div id="output" class="mt-5" style="outline: 1px solid silver; padding: 2em;">
+                    <span class="text-muted">Output shows here...</span>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <h4 class="mt-5">Sent</h4>
+                <div class="mt-1" style="outline: 1px solid silver; padding: 2em;">
+                    <pre id="payload"><span class="text-muted">Nothing sent yet...</span></pre>
+                </div>
+            </div>
+            <div class="col">
+                <h4 class="mt-5">Received</h4>
+                <div class="mt-1" style="outline: 1px solid silver; padding: 2em;">
+                    <pre id="received"><span class="text-muted">Nothing received yet...</span></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+{{end}}
+
+{{define "js"}}
+   <script>
+    // ===== DOM ACCESS: Get elements from the HTML page =====
+    let brokerBtn = document.getElementById("brokerBtn"); // Button user clicks
+    let output = document.getElementById("output");       // Area to display final message
+    let sent = document.getElementById("payload");        // Shows what request was sent
+    let received = document.getElementById("received");   // Shows full JSON response
+
+    // ===== DOM EVENT: Listen for button click =====
+    // This function runs when user clicks the button
+    brokerBtn.addEventListener("click", function() {
+
+        // ===== REQUEST CONFIGURATION =====
+        // Define HTTP request options
+        const body = {
+            method: "POST" // HTTP method (sending POST request)
+        };
+
+        // ===== HTTP REQUEST TO BACKEND =====
+        // Calling Go backend service running on port 8080
+        fetch("http://localhost:8080/broker", body)
+
+        // ===== STEP 1: Convert HTTP response to JSON =====
+        .then(function(response) {
+            return response.json(); // Convert response → JS object
+        })
+
+        // ===== STEP 2: Work with the JSON data =====
+        .then(function(data) {
+
+            // ===== DOM UPDATE =====
+            // Show what was sent to backend
+            sent.innerHTML = "empty post request";
+
+            // ===== DOM UPDATE =====
+            // Display full JSON response in formatted way
+            received.innerHTML = JSON.stringify(data, null, 4);
+
+            // ===== CONDITIONAL LOGIC =====
+            // Check if backend returned error
+            if (data.error) {
+                // If error → log message in browser console
+                console.log(data.message);
+            } else {
+                // ===== DOM UPDATE =====
+                // Show success message on UI
+                output.innerHTML += "<br><strong>Response from broker service</strong>: " + data.message;
+            }
+        })
+
+        // ===== ERROR HANDLING =====
+        .catch(function(error) {
+
+            // ===== DOM UPDATE =====
+            // Show error on UI if request fails (network/server issue)
+            output.innerHTML += "<br><br>Error: " + error;
+        });
+    });
+</script>
+{{end}}
+//You built a simple end-to-end microservice flow by connecting your Go 
+//backend to a browser-based frontend using JavaScript. A button click triggers 
+//a fetch POST request to your Go service, which processes it and returns a JSON response
+// that you display on the page using DOM updates. Along the way, you debugged several 
+ //issues—fixing JavaScript mistakes like incorrect innerHTML usage, understanding JSON 
+ //handling with stringify and response.json(), and most importantly resolving Go template
+  //parsing errors caused by mismatched quotes, inline comments, and unsafe HTML like 
+ //javascript: links. In doing so, you moved from testing APIs in isolation to building 
+ // a working client–server interaction and gained a clear understanding of how frontend, 
+  //backend, and templates interact in a real application.
