@@ -35,7 +35,7 @@ func main() {
 		// Handler is VERY IMPORTANT
 		// when a request comes in, use my routing logic to decide what to do
 		// app.routes() will return a router (like ServeMux)
-		Handler: app.routes(), //routes() decides which function to call. It connects main.go to handlers.go
+		Handler: app.routesMux(), //routes() decides which function to call. It connects main.go to handlers.go
 	}
 
 	// Start the server

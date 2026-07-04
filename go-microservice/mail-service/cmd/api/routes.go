@@ -10,15 +10,13 @@ func (app *Config) routesMux() http.Handler {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/broker", app.Broker)
-
-	mux.HandleFunc("/handle", app.HandleSubmission)
-
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"http://localhost"},
 		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
 		AllowedHeaders: []string{"*"},
 	})
+
+	mux.HandleFunc("/send", app.SendMail)
 
 	return c.Handler(mux)
 }
