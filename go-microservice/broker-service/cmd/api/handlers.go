@@ -1,10 +1,12 @@
 package main
 
 import (
+	"broker/event"
 	"bytes"         // converts JSON bytes into request body
 	"encoding/json" // marshal/unmarshal JSON
 	"errors"
 	"net/http"
+	"net/rpc"
 )
 
 // ====================================================
@@ -57,6 +59,11 @@ type AuthPayload struct {
 type LogPayload struct {
 	Name string `json:"name"`
 	Data string `json:"data"`
+}
+
+type RPCPayload struct {
+	Name string
+	Data string
 }
 
 // ====================================================
@@ -143,7 +150,7 @@ func (app *Config) HandleSubmission(
 			requestPayload.Auth,
 		)
 	case "log":
-		app.logItem(w, requestPayload.Log)
+		app.logItemViaRPC(w, requestPayload.Log)
 
 	case "mail":
 
@@ -470,5 +477,75 @@ func (app *Config) sendMail(w http.ResponseWriter, msg MailPayload) {
 	payload.Error = false
 	payload.Message = "Message sent to " + msg.To
 
+	app.writeJSON(w, http.StatusAccepted, payload)
+}
+
+func (app *Config) logEventViaRabbit(w http.ResponseWriter, l LogPayload) {
+	err := app.pushToQueue(l.Name, l.Data)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	var payload jsonResponse
+	payload.Error = false
+	payload.Message = "logged via RabbitMQ"
+
+	app.writeJSON(w, http.StatusAccepted, payload)
+}
+
+func (app *Config) pushToQueue(name, msg string) error {
+	emitter, err := event.NewEventEmitter(app.Rabbit)
+	if err != nil {
+		return err
+	}
+
+	payload := LogPayload{
+		Name: name,
+		Data: msg,
+	}
+
+	j, _ := json.MarshalIndent(&payload, "", "\t")
+
+	err = emitter.Push(string(j), "log.INFO")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (app *Config) logItemViaRPC(w http.ResponseWriter, l LogPayload) {
+
+	// Connect to the Logger Service's RPC server
+	client, err := rpc.Dial("tcp", "logger-service:5001")
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	// Prepare the data to send to the RPC server
+	rpcPayload := RPCPayload{
+		Name: l.Name,
+		Data: l.Data,
+	}
+
+	// Variable to store the response from the RPC server
+	var result string
+
+	// Call Logger Service's LogInfo() method remotely
+	err = client.Call("RPCServer.LogInfo", rpcPayload, &result)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	// Prepare HTTP response for the frontend
+	payload := jsonResponse{
+		Error:   false,
+		Message: result,
+	}
+
+	// Send response back to the frontend
 	app.writeJSON(w, http.StatusAccepted, payload)
 }
