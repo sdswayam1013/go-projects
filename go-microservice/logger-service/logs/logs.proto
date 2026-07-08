@@ -1,0 +1,39 @@
+// Specify the Protocol Buffers version
+syntax = "proto3";
+
+// Package name used inside the .proto file
+package logs;
+
+// Go package where the generated Go code will be placed
+option go_package = "/logs";
+
+// Represents an individual log entry
+message Log {
+
+    // Name of the log (INFO, ERROR, WARNING, etc.)
+    string name = 1;
+
+    // Actual log message
+    string data = 2;
+}
+
+// Request sent from Broker to Logger
+message LogRequest {
+
+    // Contains the log details
+    Log logEntry = 1;
+}
+
+// Response returned by Logger to Broker
+message LogResponse {
+
+    // Result/status message
+    string result = 1;
+}
+
+// gRPC service definition
+service LogService {
+
+    // Remote procedure that writes a log
+    rpc WriteLog(LogRequest) returns (LogResponse);
+}

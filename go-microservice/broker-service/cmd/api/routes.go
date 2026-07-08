@@ -14,6 +14,8 @@ func (app *Config) routesMux() http.Handler {
 
 	mux.HandleFunc("/handle", app.HandleSubmission)
 
+	mux.HandleFunc("/log-grpc", app.LogViaGRPC)
+
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"http://localhost"},
 		AllowedMethods: []string{"GET", "POST", "OPTIONS"},

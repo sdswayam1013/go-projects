@@ -2,11 +2,18 @@ package main
 
 import (
 	"broker/event"
-	"bytes"         // converts JSON bytes into request body
+	"bytes" // converts JSON bytes into request body
+	"context"
 	"encoding/json" // marshal/unmarshal JSON
 	"errors"
 	"net/http"
 	"net/rpc"
+	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
+	"broker/logs"
 )
 
 // ====================================================
@@ -547,5 +554,63 @@ func (app *Config) logItemViaRPC(w http.ResponseWriter, l LogPayload) {
 	}
 
 	// Send response back to the frontend
+	app.writeJSON(w, http.StatusAccepted, payload)
+}
+
+func (app *Config) LogViaGRPC(w http.ResponseWriter, r *http.Request) {
+
+	// Read the incoming HTTP request body into a Go struct
+	var requestPayload RequestPayload
+
+	// Convert JSON request into RequestPayload
+	err := app.readJSON(w, r, &requestPayload)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	// Connect to the Logger gRPC server
+	// (Equivalent to rpc.Dial() in Go net/rpc)
+	conn, err := grpc.Dial(
+		"logger-service:50001",
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock(),
+	)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	// Close the connection when this function finishes
+	defer conn.Close()
+
+	// Create a gRPC client stub from the connection
+	// (Equivalent to rpc.NewClient())
+	c := logs.NewLogServiceClient(conn)
+
+	// Create a context with a 1-second timeout
+	// Prevents the client from waiting forever
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	// Call the remote WriteLog() method on Logger Service
+	// (Equivalent to client.Call() in Go net/rpc)
+	_, err = c.WriteLog(ctx, &logs.LogRequest{
+		LogEntry: &logs.Log{
+			Name: requestPayload.Log.Name,
+			Data: requestPayload.Log.Data,
+		},
+	})
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	// Prepare HTTP response for the frontend
+	var payload jsonResponse
+	payload.Error = false
+	payload.Message = "logged"
+
+	// Send success response back to the browser
 	app.writeJSON(w, http.StatusAccepted, payload)
 }
