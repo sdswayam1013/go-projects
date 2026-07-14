@@ -2,7 +2,7 @@ version: '3'
 
 services:
   caddy:
-    image: sdswayam1013/micro-caddy:1.0.0
+    image: sdswayam1013/micro-caddy-production:1.0.0
     deploy:
       mode: replicated
       replicas: 1

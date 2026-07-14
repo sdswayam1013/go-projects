@@ -13,7 +13,7 @@ import (
 
 // webPort defines the port your server will run on
 // Note: port 80 may require sudo/root privileges on Linux/macOS
-const webPort = "80"
+const webPort = "8080"
 
 // Config is your application struct
 // You attach methods (routes, handlers) to this struct
