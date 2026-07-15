@@ -1,0 +1,11 @@
+.DS_Store
+
+# Go build artifacts
+authApp
+brokerApp
+frontApp
+api
+
+# PostgreSQL data
+project/db-data/
+db-data/
