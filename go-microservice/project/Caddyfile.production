@@ -21,7 +21,7 @@
 	}
 }
 
-manager:80 {
+manager {
 	encode zstd gzip
 	import static
 

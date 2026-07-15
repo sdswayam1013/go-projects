@@ -2,10 +2,13 @@ version: '3'
 
 services:
   caddy:
-    image: sdswayam1013/micro-caddy-production:1.0.0
+    image: sdswayam1013/micro-caddy-production:1.0.1
     deploy:
       mode: replicated
       replicas: 1
+      placement:
+        constraints:
+          - node.hostname == manager
     ports:
       - "80:80"
       - "443:443"
@@ -19,7 +22,7 @@ services:
       mode: replicated
       replicas: 1
     environment:
-      BROKER_URL: "http://backend"
+      BROKER_URL: "https://manager"
 
   broker-service:
     image: sdswayam1013/broker-service:1.0.1
@@ -65,21 +68,27 @@ services:
   rabbitmq:
     image: rabbitmq:3.9-alpine
     deploy:
-      mode: global
+      mode: replicated
+      replicas: 1
 
   mailhog:
     image: mailhog/mailhog:latest
     ports:
       - "8025:8025"
     deploy:
-      mode: global
+       mode: replicated
+       replicas: 1
 
   mongo:
     image: mongo:4.2.17-bionic
     ports:
       - "27017:27017"
     deploy:
-      mode: global
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == manager
     environment:
       MONGO_INITDB_DATABASE: logs
       MONGO_INITDB_ROOT_USERNAME: admin
@@ -95,6 +104,9 @@ services:
     deploy:
       mode: replicated
       replicas: 1
+      placement:
+        constraints:
+          - node.hostname == manager
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
