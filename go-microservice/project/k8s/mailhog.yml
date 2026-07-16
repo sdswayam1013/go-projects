@@ -1,0 +1,74 @@
+# ----------------------------
+# Mongo Deployment
+# ----------------------------
+
+apiVersion: apps/v1          # Deployment API version
+kind: Deployment             # Resource type
+
+metadata:
+  name: mailhog               # Deployment name
+
+spec:
+  replicas: 1                # Run one Mongo Pod
+
+  selector:
+    matchLabels:
+      app: mailhog             # Select Pods having label app=mailhog
+
+  template:                  # Blueprint for creating Pods
+    metadata:
+      labels:
+        app: mailhog           # Label assigned to created Pods
+
+    spec:
+      containers:
+        - name: mailhog
+          image: "mailhog/mailhog:latest"
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+
+          env:
+            - name: MONGO_INITDB_DATABASE
+              value: "logs"
+
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: "admin"
+
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              value: "password"
+
+          ports:
+            - containerPort: 27017   # Mongo listens here
+            - containerPort: 8025   # Mailhog Web UI port
+
+---
+
+# ----------------------------
+# Mongo Service
+# ----------------------------
+
+apiVersion: v1               # Core API
+kind: Service                # Kubernetes Service
+
+metadata:
+  name: mailhog
+
+spec:
+
+  selector:
+    app: mailhog               # Forward traffic to Pods having app=mailhog
+
+  ports:
+    - protocol: TCP
+      name: smtp-port
+      port: 1025          # Service Port
+      targetPort: 1025    # Pod Port
+    - protocol: TCP
+      name: smtp-port
+      port: 8025         
+      targetPort: 805    

@@ -1,0 +1,63 @@
+# ----------------------------
+# Mongo Deployment
+# ----------------------------
+
+apiVersion: apps/v1          # Deployment API version
+kind: Deployment             # Resource type
+
+metadata:
+  name: authentication-service              # Deployment name
+
+spec:
+  replicas: 1                # Run one Mongo Pod
+
+  selector:
+    matchLabels:
+      app: authentication-service            # Select Pods having label app=mongo
+
+  template:                  # Blueprint for creating Pods
+    metadata:
+      labels:
+        app: authentication-service          # Label assigned to created Pods
+
+    spec:
+      containers:
+        - name: authentication-service
+          image: "sdswayam1013/authentication-service:1.0.0"
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+
+          env:
+            - name: DSN
+              value: "host=host.minikube.internal port=5432 user=postgres password=password dbname=users sslmode=disable timezone=UTC connect_timeout=5" 
+
+          ports:
+            - containerPort: 80  # Mongo listens here
+
+---
+
+# ----------------------------
+# Mongo Service
+# ----------------------------
+
+apiVersion: v1               # Core API
+kind: Service                # Kubernetes Service
+
+metadata:
+  name: authentication-service
+
+spec:
+
+  selector:
+    app: authentication-service               # Forward traffic to Pods having app=authentication-service
+
+  ports:
+    - protocol: TCP
+      name: main-port
+      port: 80          # Service Port
+      targetPort: 80      # Pod Port

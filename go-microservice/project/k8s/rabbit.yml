@@ -1,0 +1,60 @@
+# ----------------------------
+# Mongo Deployment
+# ----------------------------
+
+apiVersion: apps/v1          # Deployment API version
+kind: Deployment             # Resource type
+
+metadata:
+  name: rabbitmq              # Deployment name
+
+spec:
+  replicas: 1                # Run one Mongo Pod
+
+  selector:
+    matchLabels:
+      app: rabbitmq          # Select Pods having label app=mongo
+
+  template:                  # Blueprint for creating Pods
+    metadata:
+      labels:
+        app: rabbitmq          # Label assigned to created Pods
+
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3.9-alpine
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+
+
+          ports:
+            - containerPort: 5672  # Mongo listens here
+
+---
+
+# ----------------------------
+# Mongo Service
+# ----------------------------
+
+apiVersion: v1               # Core API
+kind: Service                # Kubernetes Service
+
+metadata:
+  name: rabbitmq
+
+spec:
+
+  selector:
+    app: rabbitmq          # Forward traffic to Pods having app=rabbitmq
+
+  ports:
+    - protocol: TCP
+      name: main-port
+      port: 5672            # Service Port
+      targetPort: 5672      # Pod Port
