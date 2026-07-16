@@ -190,12 +190,12 @@ func (l *LogEntry) Update() (*mongo.UpdateResult, error) {
 
 		// Fields to update
 		bson.D{
-			bson.E{
-				Key: "$set",
-				Value: bson.D{
-					bson.E{Key: "name", Value: l.Name},
-					bson.E{Key: "data", Value: l.Data},
-					bson.E{Key: "updated_at", Value: time.Now()},
+			{
+				"$set",
+				bson.D{
+					{"name", l.Name},
+					{"data", l.Data},
+					{"updated_at", time.Now()},
 				},
 			},
 		},

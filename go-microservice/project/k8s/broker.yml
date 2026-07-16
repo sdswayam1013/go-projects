@@ -1,0 +1,60 @@
+# ----------------------------
+# Mongo Deployment
+# ----------------------------
+
+apiVersion: apps/v1          # Deployment API version
+kind: Deployment             # Resource type
+
+metadata:
+  name: broker-service             # Deployment name
+
+spec:
+  replicas: 1                # Run one Mongo Pod
+
+  selector:
+    matchLabels:
+      app: broker-service           # Select Pods having label app=mongo
+
+  template:                  # Blueprint for creating Pods
+    metadata:
+      labels:
+        app: broker-service           # Label assigned to created Pods
+
+    spec:
+      containers:
+        - name: broker-service
+          image: sdswayam1013/broker-service:1.0.1
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+
+
+          ports:
+            - containerPort: 8080 # Mongo listens here
+
+---
+
+# ----------------------------
+# Mongo Service
+# ----------------------------
+
+apiVersion: v1               # Core API
+kind: Service                # Kubernetes Service
+
+metadata:
+  name: broker-service
+
+spec:
+
+  selector:
+    app: broker-service          # Forward traffic to Pods having app=broker-service
+
+  ports:
+    - protocol: TCP
+      name: main-port
+      port: 8080            # Service Port
+      targetPort: 8080      # Pod Port

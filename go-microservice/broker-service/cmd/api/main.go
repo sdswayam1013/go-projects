@@ -1,25 +1,40 @@
 package main
 
 import (
-	"fmt"      // used for string formatting (e.g., building ":80")
-	"log"      // used for logging messages to console
+	"fmt" // used for string formatting (e.g., building ":80")
+	"log" // used for logging messages to console
+	"math"
 	"net/http" // core HTTP server package in Go
+	"os"
+	"time"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 // webPort defines the port your server will run on
 // Note: port 80 may require sudo/root privileges on Linux/macOS
-const webPort = "80"
+const webPort = "8080"
 
 // Config is your application struct
 // You attach methods (routes, handlers) to this struct
 // This helps in organizing code and injecting dependencies later (DB, config, etc.)
-type Config struct{} //conceptually it represents my app
+type Config struct {
+	Rabbit *amqp.Connection
+} //conceptually it represents my app
 
 // main is the entry point of your application
 func main() {
+	rabbitConn, err := connect()
+	if err != nil {
+		log.Panic(err)
+		os.Exit(1)
+	}
+	defer rabbitConn.Close()
 
 	// I am creating my application object(instance of Config struct))
-	app := Config{} //it carries my methods like routes() and btroker()
+	app := Config{
+		Rabbit: rabbitConn,
+	} //it carries my methods like routes() and btroker()
 
 	// Log that your service is starting
 	log.Printf("Starting broker service on port %s\n", webPort)
@@ -43,7 +58,7 @@ func main() {
 	// - opens the port
 	// - starts listening for incoming HTTP requests
 	// - blocks the program (keeps it running)
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 
 	// If server fails (port busy, permission issue, etc.), log and crash
 	if err != nil {
@@ -84,3 +99,32 @@ It matches the required signature:
 func(w http.ResponseWriter, r *http.Request)
 */
 // Broker handler is defined in handlers.go
+
+func connect() (*amqp.Connection, error) { //exponential backoff
+	var counts int64
+	var backOff = 1 * time.Second
+	var connection *amqp.Connection
+	//dont connect untill rabbit is ready
+	for {
+		c, err := amqp.Dial("amqp://guest:guest@rabbitmq")
+		if err != nil {
+			fmt.Println("RabbitMQ not yet ready...")
+			counts++
+		} else {
+			log.Println("Connected to RabbitMQ")
+			connection = c
+			break
+		}
+
+		if counts > 5 {
+			fmt.Println(err)
+			return nil, err
+		}
+
+		backOff = time.Duration(math.Pow(float64(counts), 2)) * time.Second
+		log.Println("Backing off...")
+		time.Sleep(backOff)
+		continue
+	}
+	return connection, nil
+}

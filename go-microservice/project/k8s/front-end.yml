@@ -1,0 +1,63 @@
+# ----------------------------
+# Mongo Deployment
+# ----------------------------
+
+apiVersion: apps/v1          # Deployment API version
+kind: Deployment             # Resource type
+
+metadata:
+  name: front-end             # Deployment name
+
+spec:
+  replicas: 1                # Run one Mongo Pod
+
+  selector:
+    matchLabels:
+      app: front-end           # Select Pods having label app=mongo
+
+  template:                  # Blueprint for creating Pods
+    metadata:
+      labels:
+        app: front-end           # Label assigned to created Pods
+
+    spec:
+      containers:
+        - name: front-end
+          image: sdswayam1013/front-end:1.0.6
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          env:
+            - name: BROKER_URL
+              value: "http://broker-service.info"
+
+
+          ports:
+            - containerPort: 8081 # Front-end listens here
+
+---
+
+# ----------------------------
+# Front-end Service
+# ----------------------------
+
+apiVersion: v1               # Core API
+kind: Service                # Kubernetes Service
+
+metadata:
+  name: front-end
+
+spec:
+
+  selector:
+    app: front-end          # Forward traffic to Pods having app=front-end
+
+  ports:
+    - protocol: TCP
+      name: main-port
+      port: 8081        # Service Port
+      targetPort: 8081     # Pod Port
